@@ -48,7 +48,8 @@ for (c in signif_chrs){
 res_df = data.frame()
 for (n in 1:nrow(lead_snp_df)){
     chr = as.integer(lead_snp_df[n,"Chr"])
-        left_lead = as.integer(lead_snp_df[n,"bp"]) - 1000000
+    lead_pos = as.integer(lead_snp_df[n,"bp"])
+    left_lead = as.integer(lead_snp_df[n,"bp"]) - 1000000
     if (left_lead < 0){
             left_lead = 0
     }else{
@@ -60,7 +61,19 @@ for (n in 1:nrow(lead_snp_df)){
     top_pval = as.numeric(lead_snp_df[n,"log10"])
 
     qtl_left=as.integer(min(left_df[top_pval - left_df$log10 < 4, "bp"]))
+    left_dis = lead_pos - qtl_left
+    if (left_dis <= 500000){
+        qtl_left=qtl_left
+    }else{
+        qtl_left=subset(left_df, bp >= lead_pos - 500000) %>% pull(bp) %>% min 
+    }
     qtl_right=as.integer(max(right_df[top_pval - right_df$log10 < 4, "bp"]))
+    right_dis = qtl_right - lead_pos
+    if (left_dis <= 500000){
+        qtl_right=qtl_right
+    }else{
+        qtl_right=subset(right_df, bp <= lead_pos + 500000) %>% pull(bp) %>% max
+    }
     res_df = rbind(res_df, cbind(lead_snp_df[n,], qtl_left,qtl_right ))
 }
 
