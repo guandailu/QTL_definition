@@ -17,6 +17,7 @@ arguments <- add_argument(arguments, "--is_signif", short="-s", default='TRUE', 
 arguments <- add_argument(arguments, "--chr", short="-c", default='Chr', help="Chromosome column")
 arguments <- add_argument(arguments, "--bp", short="-b", default='bp', help="SNP position column")
 arguments <- add_argument(arguments, "--pval", short="-p", default='p', help="GWAS P value column")
+arguments <- add_argument(arguments, "--out_prefix", short="-o",default='QTL_region', help="GWAS P value column")
 argv <- parse_args(arguments)
 
 ### Options
@@ -30,6 +31,9 @@ load_packages("tidyverse")
 df = fread(argv$gwas, header=T)
 if (argv$is_fdr == "FALSE"){
   df$fdr = p.adjust(df[,p], method="fdr")
+  fdr="fdr"
+}else{
+  fdr="fdr"
 }
 df$log10 = -log10(df[,p])
 
@@ -64,13 +68,18 @@ for (n in 1:nrow(lead_snp_df)){
     lead_pos = as.integer(lead_snp_df[n,bp])
     left_lead = as.integer(lead_snp_df[n,bp]) - 1000000
     if (left_lead < 0){
-            left_lead = 0
+        left_lead = 0
     }else{
         left_lead=left_lead
     }
     right_lead = as.integer(lead_snp_df[n,bp]) + 1000000
-    left_df = subset(df, df[,Chr] == chr & df[,bp] >= left_lead & df[,bp] <= as.integer(lead_snp_df[n, bp])) %>% arrange(desc(bp))
-    right_df = subset(df, df[,Chr] == chr & df[,bp] <= right_lead & df[,bp] >= as.integer(lead_snp_df[n, bp])) %>% arrange(desc(bp))
+    if (argv$is_signif == "TRUE"){
+        left_df = subset(df, df[,Chr] == chr & df[,bp] >= left_lead & df[,bp] <= as.integer(lead_snp_df[n, bp]) & df[,fdr] <= 0.05) %>% arrange(desc({{bp}}))
+        right_df = subset(df, df[,Chr] == chr & df[,bp] <= right_lead & df[,bp] >= as.integer(lead_snp_df[n, bp]) & df[,fdr] <= 0.05) %>% arrange(desc({{bp}}))
+    }else{
+        left_df = subset(df, df[,Chr] == chr & df[,bp] >= left_lead & df[,bp] <= as.integer(lead_snp_df[n, bp])) %>% arrange(desc({{bp}}))
+        right_df = subset(df, df[,Chr] == chr & df[,bp] <= right_lead & df[,bp] >= as.integer(lead_snp_df[n, bp])) %>% arrange(desc({{bp}}))
+    }
     top_pval = as.numeric(lead_snp_df[n,"log10"])
 
     qtl_left=as.integer(min(left_df[top_pval - left_df$log10 < 4, bp]))
@@ -78,18 +87,18 @@ for (n in 1:nrow(lead_snp_df)){
     if (left_dis <= 500000){
         qtl_left=qtl_left
     }else{
-        qtl_left=subset(left_df, df[,bp] >= lead_pos - 500000) %>% pull(bp) %>% min 
+        qtl_left=subset(left_df, left_df[,bp] >= lead_pos - 500000) %>% pull({{bp}}) %>% min 
     }
-    qtl_right=as.integer(max(right_df[top_pval - right_df$log10 < 4, "bp"]))
+    qtl_right=as.integer(max(right_df[top_pval - right_df$log10 < 4, bp]))
     right_dis = qtl_right - lead_pos
     if (left_dis <= 500000){
         qtl_right=qtl_right
     }else{
-        qtl_right=subset(right_df, bp <= lead_pos + 500000) %>% pull(bp) %>% max
+        qtl_right=subset(right_df, right_df[,bp] <= lead_pos + 500000) %>% pull({{bp}}) %>% max
     }
     res_df = rbind(res_df, cbind(lead_snp_df[n,], qtl_left, qtl_right))
 }
 
 #### output
-output_file=paste0(str_replace(argv$gwas, ".assoc.mlma.fdr.txt",""),".qtl_resions.txt")
+output_file=paste0(argv$out_prefix,".txt")
 fwrite(res_df, output_file, sep = "\t", row.names=F, quote=F)
