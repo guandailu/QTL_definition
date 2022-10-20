@@ -1,5 +1,6 @@
 # September 23,2022
 # Version 0
+# Author: Dailu Guan
 ### load required packages
 load_packages <- function(package){
   if(eval(parse(text=paste("require(",package,")")))) return(TRUE)
