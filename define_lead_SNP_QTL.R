@@ -63,8 +63,9 @@ for (c in signif_chrs){
 
 
 #### define QTL regions
-res_df = data.frame()
-for (n in 1:nrow(lead_snp_df)){
+if (nrow(lead_snp_df) > 0){
+  res_df = data.frame()
+  for (n in 1:nrow(lead_snp_df)){
     chr = as.integer(lead_snp_df[n,Chr])
     lead_pos = as.integer(lead_snp_df[n,bp])
     left_lead = as.integer(lead_snp_df[n,bp]) - 1000000
@@ -98,8 +99,10 @@ for (n in 1:nrow(lead_snp_df)){
         qtl_right=subset(right_df, right_df[,bp] <= lead_pos + 500000) %>% pull({{bp}}) %>% max
     }
     res_df = rbind(res_df, cbind(lead_snp_df[n,], qtl_left, qtl_right))
+  }
+}else{
+  cat("No lead SNPs found...")
 }
-
 #### output
 output_file=paste0(argv$out_prefix,".txt")
 fwrite(res_df, output_file, sep = "\t", row.names=F, quote=F)
