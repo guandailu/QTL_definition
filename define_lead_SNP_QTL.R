@@ -4,7 +4,7 @@
 ### load required packages
 load_packages <- function(package){
   if(eval(parse(text=paste("require(",package,")")))) return(TRUE)
-
+  }else{
   install.packages(package)
   return(eval(parse(text=paste("require(",package,")"))))
 }
