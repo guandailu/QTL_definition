@@ -8,6 +8,7 @@ load_packages <- function(package){
   install.packages(package)
   return(eval(parse(text=paste("require(",package,")"))))
 }
+}
 
 ### parse parameters
 load_packages("argparser")
@@ -61,10 +62,9 @@ for (c in signif_chrs){
   }
 }
 
-
+res_df = data.frame()
 #### define QTL regions
 if (nrow(lead_snp_df) > 0){
-  res_df = data.frame()
   for (n in 1:nrow(lead_snp_df)){
     chr = as.integer(lead_snp_df[n,Chr])
     lead_pos = as.integer(lead_snp_df[n,bp])
